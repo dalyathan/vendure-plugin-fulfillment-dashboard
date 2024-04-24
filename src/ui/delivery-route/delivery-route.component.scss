@@ -1,0 +1,21 @@
+
+vdr-data-table {
+    ::ng-deep {
+        table {
+            margin-top: 0;
+        }
+    }
+}
+
+vdr-order-state-label {
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.flex{
+    margin-top: 1.5em !important;
+}
+.button-small.active {
+    background-color: var(--color-primary-200);
+    color: var(--color-primary-900);
+}
