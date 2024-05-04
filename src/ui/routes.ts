@@ -5,7 +5,7 @@ export default [
     registerRouteComponent({
         component: GreeterComponent,
         path: '',
-        title: 'Fulfillments',
+        title: '',
         breadcrumb: 'fulfillments',
     }),
 ]
