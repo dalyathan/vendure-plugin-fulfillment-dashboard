@@ -1,59 +1,70 @@
-<div class="flex" *ngIf="dateSelection$ | async as selection">
-    <button class="button-small" [class.active]="selection.date === today" (click)="dateSelection$.next({timeframe: 'day', date: today})">
-        {{ 'dashboard.today' | translate }}
-    </button>
-    <button class="ml-1 button-small" [class.active]="selection.date === yesterday" (click)="dateSelection$.next({timeframe: 'day', date: yesterday})">
-        {{ 'dashboard.yesterday' | translate }}
-    </button>
-    <button class="ml-1 button-small" [class.active]="selection.timeframe === 'week'" (click)="dateSelection$.next({timeframe: 'week'})">
-        {{ 'dashboard.thisWeek' | translate }}
-    </button>
-    <button class="ml-1 button-small" [class.active]="selection.timeframe === 'month'" (click)="dateSelection$.next({timeframe: 'month'})">
-        {{ 'dashboard.thisMonth' | translate }}
-    </button>
-</div>
-<div class="flex">
-    <button class="button-small" [class.active]="!(deliveryTypeSelection$ | async)" (click)="deliveryTypeSelection$.next(false)">
-        Collection
-    </button>
-    <button class="ml-1 button-small" [class.active]="deliveryTypeSelection$ | async" (click)="deliveryTypeSelection$.next(true)">
-       Delivery
-    </button>
-</div>
-<vdr-data-table-2 [items]="latestOrders$ | async" id="latest-orders-widget-list">
-    <vdr-dt2-column [heading]="'common.code' | translate" id="code">
-        <ng-template let-order="item">
-            <a class="button-ghost" [routerLink]="['/orders/', order.id]"
-                ><span>{{ order.code }}</span>
-                <clr-icon shape="arrow right"></clr-icon>
-            </a>
-        </ng-template>
-    </vdr-dt2-column>
-    <vdr-dt2-column [heading]="'order.state' | translate" id="state" [hiddenByDefault]="true">
-        <ng-template let-order="item">
-            <vdr-order-state-label [state]="order.state"></vdr-order-state-label>
-        </ng-template>
-    </vdr-dt2-column>
-    <vdr-dt2-column [heading]="'customer.customer' | translate" id="customer" [hiddenByDefault]="true">
-        <ng-template let-order="item">
-            <vdr-customer-label [customer]="order.customer"></vdr-customer-label>
-        </ng-template>
-    </vdr-dt2-column>
-    <vdr-dt2-column [heading]="'order.total' | translate" id="total">
-        <ng-template let-order="item">
-            {{ order.totalWithTax | localeCurrency : order.currencyCode }}
-        </ng-template>
-    </vdr-dt2-column>
-    <vdr-dt2-column [heading]="'order.placed-at' | translate" id="placed-at">
-        <ng-template let-order="item">
-            {{ order.orderPlacedAt | timeAgo }}
-        </ng-template>
-    </vdr-dt2-column>
-    <vdr-dt2-column heading="Delivery Route" id="delivery-route">
-        <ng-template let-order="item">
-            <button class="btn btn-link" [disabled]="!order.deliveryRoute" (click)="openDeliveryRoute(order.deliveryRoute)">
-                Open
-            </button>
-        </ng-template>
-    </vdr-dt2-column>
-</vdr-data-table-2>
+<vdr-card title="Orders">
+    <div class="flex" *ngIf="dateSelection$ | async as selection">
+        <button class="ml-1 button-small" [class.active]="selection.date === yesterday" (click)="dateSelection$.next({timeframe: 'day', date: yesterday})">
+            {{ 'dashboard.yesterday' | translate }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === today" (click)="dateSelection$.next({timeframe: 'day', date: today})">
+            {{ 'dashboard.today' | translate }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === todayPlus1" (click)="dateSelection$.next({timeframe: 'day', date: todayPlus1})">
+            {{ format(todayPlus1) }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === todayPlus2" (click)="dateSelection$.next({timeframe: 'day', date: todayPlus2})">
+            {{ format(todayPlus2) }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === todayPlus3" (click)="dateSelection$.next({timeframe: 'day', date: todayPlus3})">
+            {{ format(todayPlus3) }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === todayPlus4" (click)="dateSelection$.next({timeframe: 'day', date: todayPlus4})">
+            {{ format(todayPlus4) }}
+        </button>
+        <button class="button-small" [class.active]="selection.date === todayPlus5" (click)="dateSelection$.next({timeframe: 'day', date: todayPlus5})">
+            {{ format(todayPlus5) }}
+        </button>
+    </div>
+    <div class="flex">
+        <button class="button-small" [class.active]="!(deliveryTypeSelection$ | async)" (click)="deliveryTypeSelection$.next(false)">
+            Collection
+        </button>
+        <button class="ml-1 button-small" [class.active]="deliveryTypeSelection$ | async" (click)="deliveryTypeSelection$.next(true)">
+        Delivery
+        </button>
+    </div>
+    <vdr-data-table-2 [items]="latestOrders$ | async" id="latest-orders-widget-list">
+        <vdr-dt2-column [heading]="'common.code' | translate" id="code">
+            <ng-template let-order="item">
+                <a class="button-ghost" [routerLink]="['/orders/', order.id]"
+                    ><span>{{ order.code }}</span>
+                    <clr-icon shape="arrow right"></clr-icon>
+                </a>
+            </ng-template>
+        </vdr-dt2-column>
+        <vdr-dt2-column [heading]="'order.state' | translate" id="state" [hiddenByDefault]="true">
+            <ng-template let-order="item">
+                <vdr-order-state-label [state]="order.state"></vdr-order-state-label>
+            </ng-template>
+        </vdr-dt2-column>
+        <vdr-dt2-column [heading]="'customer.customer' | translate" id="customer" [hiddenByDefault]="true">
+            <ng-template let-order="item">
+                <vdr-customer-label [customer]="order.customer"></vdr-customer-label>
+            </ng-template>
+        </vdr-dt2-column>
+        <vdr-dt2-column [heading]="'order.total' | translate" id="total">
+            <ng-template let-order="item">
+                {{ order.totalWithTax | localeCurrency : order.currencyCode }}
+            </ng-template>
+        </vdr-dt2-column>
+        <vdr-dt2-column [heading]="'order.placed-at' | translate" id="placed-at">
+            <ng-template let-order="item">
+                {{ order.orderPlacedAt | timeAgo }}
+            </ng-template>
+        </vdr-dt2-column>
+        <vdr-dt2-column heading="Delivery Route" id="delivery-route">
+            <ng-template let-order="item">
+                <button class="btn btn-link" [disabled]="!order.deliveryRoute" (click)="openDeliveryRoute(order.deliveryRoute)">
+                    Open
+                </button>
+            </ng-template>
+        </vdr-dt2-column>
+    </vdr-data-table-2>
+</vdr-card>

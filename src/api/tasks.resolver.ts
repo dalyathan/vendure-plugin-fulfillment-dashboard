@@ -17,7 +17,7 @@ export class TasksResolver {
     @ResolveField('deliveryRoute')
     @Resolver('Order')
     async deliveryRoute(@Ctx() ctx: RequestContext, @Parent() order: Order) {
-        const API_KEY= process.env.API_KEY;
+        const API_KEY= process.env.googleapikey;
         if((order.customFields as any).deliveryRoute?.trim().length){
             Logger.info(`Returning cached delivery route for order ${order.code}`, loggerCtx)
             return (order.customFields as any).deliveryRoute
