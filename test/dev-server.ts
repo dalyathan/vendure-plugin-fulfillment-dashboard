@@ -21,6 +21,7 @@ import { VendureFulfillmentsDashboardPlugin } from '../dist';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { testPaymentMethod } from './test-payment-method';
 import {Preparations, Fulfill} from '../src/custom-states'
+// import {VendureFulfillmentsDashboardPlugin} from '../src/plugin'
 
 require('dotenv').config();
 
@@ -46,7 +47,7 @@ require('dotenv').config();
           {name: "Lat", type: 'string'}
       ],
       Order:[
-          {name: "Is_Delivery", type: "boolean"},
+          {name: "Is_Delivery", type: "boolean", defaultValue: false},
           {name: "Delivery_Collection_Date", type: "datetime" },
           {name: "Time_Slot", type: "string" },
           {name: "Order_Note", type: "string" },

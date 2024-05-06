@@ -11,11 +11,20 @@ export const adminApi=gql`
         colorType: String!
     }
 
-    extend type Query{
-        tasks: [Task!]
+    type DeliveryRoutes{
+        orders: [Order]!
+        url: String!
     }
 
-    extend type Order {
-        deliveryRoute: String
+    input Location{
+        lat: String!
+        lon: String!
+    }
+
+
+
+    extend type Query{
+        tasks: [Task!]
+        deliverableOrders(options: OrderListOptions, location: Location): DeliveryRoutes!
     }
 `;

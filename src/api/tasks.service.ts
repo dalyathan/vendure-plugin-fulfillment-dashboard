@@ -1,45 +1,15 @@
-import {Injectable, OnModuleInit} from '@nestjs/common';
-import { EventBus, Logger, Order, OrderEvent, OrderService, ChannelEvent, RequestContext, TransactionalConnection } from '@vendure/core';
+import {Injectable} from '@nestjs/common';
+import { EventBus, Order, OrderService, RequestContext, TransactionalConnection, OrderState } from '@vendure/core';
 import {LessThanOrEqual, Not, In, Between, FindOperator} from 'typeorm';
 import dayjs from 'dayjs';
 import { TaskMessage } from '../types';
-import {filter} from 'rxjs';
-import { loggerCtx } from '../constants';
 
 export const SHOULD_CLEAR_KEY="shouldClearCachedDeliveryRoute"
 @Injectable()
-export class TasksService implements OnModuleInit{
+export class TasksService{
     constructor(private conn: TransactionalConnection,
         private eventBus: EventBus, private orderService: OrderService){
 
-    }
-    onModuleInit() {
-        this.eventBus.ofType(OrderEvent).pipe(filter((event)=> event.type === 'updated')).subscribe(async ({ctx, order})=>{
-            const customFields=order.customFields as any;
-            if(customFields.deliveryRoute?.trim().length && !customFields.google_place_id?.trim().length){
-                await this.orderService.updateCustomFields(ctx, order.id, {...customFields, deliveryRoute: ''})
-                Logger.info(`Cleared cached delivery route for order ${order.code}`, loggerCtx)
-            }
-        })
-        this.eventBus.ofType(ChannelEvent).pipe(filter((event)=> event.type === 'updated')).subscribe(async ({ctx, entity})=>{
-            //we need to reset all the customFields.deliveryRoute of all the orders in this channel
-            const orderRepo=this.conn.getRepository(ctx, Order);
-            const channelOrders= await orderRepo.createQueryBuilder('order')
-                .select('order.id')
-                .addSelect('order.customFields.deliveryRoute')
-            .leftJoinAndSelect('order.lines','line')
-            .setFindOptions({where:{
-                channels:{
-                    id: ctx.channelId
-                }
-            }})
-            .getMany()
-            for(let order of channelOrders){
-                (order.customFields as any).deliveryRoute=''
-            }
-            await orderRepo.save(channelOrders);
-            Logger.info(`Cleared cached delivery route for all orders in channel ${entity.code}`, loggerCtx)
-        })
     }
 
     async getTasks(ctx: RequestContext):Promise<TaskMessage[]>{
@@ -61,7 +31,7 @@ export class TasksService implements OnModuleInit{
     }
 
     async getNotCollectedOrders(ctx: RequestContext):Promise<TaskMessage[]>{
-        const orders= await this.getFilteredOrders(ctx, LessThanOrEqual(dayjs(new Date).subtract(2, 'days').toDate()), 'readyforcollection')
+        const orders= await this.getFilteredOrders(ctx, LessThanOrEqual(dayjs(new Date).subtract(2, 'days').toDate()), Not('collected'), false)
        
         return orders.map((order)=>{
             return {
@@ -76,7 +46,7 @@ export class TasksService implements OnModuleInit{
     }
 
     async getNotDeliveredOrder(ctx: RequestContext):Promise<TaskMessage[]>{
-        const orders= await this.getFilteredOrders(ctx, LessThanOrEqual(dayjs(new Date).subtract(1, 'days').toDate()), Not('Delivered'))
+        const orders= await this.getFilteredOrders(ctx, LessThanOrEqual(dayjs(new Date).subtract(1, 'days').toDate()), Not('Delivered'), true)
         
         return orders.map((order)=>{
             return {
@@ -93,11 +63,11 @@ export class TasksService implements OnModuleInit{
     async getNotPreparedWhenDeliveryDateIsToday(ctx: RequestContext):Promise<TaskMessage[]>{
         const todayStartOfDay= dayjs().startOf('day').toDate();
         const todayEndOfDay= dayjs().endOf('day').toDate()
-        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), In(['Draft','AddingItems','ArrangingPayment','PaymentAuthorized','PaymentSettled','awaitingprep','preparing']))
+        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), In(['awaitingprep','preparing']))
         
         return orders.map((order)=>{
             return {
-                taskName: `Prepare ${this.getLink(order)}`,
+                taskName: `Prepare ${this.getLink(order)} for today`,
 	            tag: 'High Priority',
                 orderId: order.id,
                 state: order.state,
@@ -111,7 +81,7 @@ export class TasksService implements OnModuleInit{
         const tomorrow= dayjs().add(1, 'day');
         const tommorowStartOfDay= tomorrow.startOf('day').toDate();
         const tomorrowEndOfDay= tomorrow.endOf('day').toDate()
-        const orders= await this.getFilteredOrders(ctx, Between(tommorowStartOfDay, tomorrowEndOfDay), In(['Draft','AddingItems','ArrangingPayment','PaymentAuthorized','PaymentSettled','awaitingprep','preparing']) )
+        const orders= await this.getFilteredOrders(ctx, Between(tommorowStartOfDay, tomorrowEndOfDay), In(['awaitingprep','preparing']) )
         
         return orders.map((order)=>{
             return {
@@ -128,7 +98,7 @@ export class TasksService implements OnModuleInit{
     async getPreparedAndNotOutForDeliveryWhenDeliveryDateIsToday(ctx: RequestContext):Promise<TaskMessage[]>{
         const todayStartOfDay= dayjs().startOf('day').toDate()
         const todayEndOfDay= dayjs().endOf('day').toDate()
-        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), 'readyfordelivery' )
+        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), In(['readyfordelivery','prepared']),true )
         return orders.map((order)=>{
             return {
                 taskName: `Send ${this.getLink(order)} out for delivery`,
@@ -144,11 +114,11 @@ export class TasksService implements OnModuleInit{
     async getAnyOutForDeliveryWhenDeliveryDateIsToday(ctx: RequestContext):Promise<TaskMessage[]>{
         const todayStartOfDay= dayjs().startOf('day').toDate()
         const todayEndOfDay= dayjs().endOf('day').toDate()
-        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), 'outfordelivery' )
+        const orders= await this.getFilteredOrders(ctx, Between(todayStartOfDay, todayEndOfDay), 'outfordelivery',true )
         
         return orders.map((order)=>{
             return {
-                taskName: `Send ${this.getLink(order)} out for delivery`,
+                taskName: `Finish Daily Deliveries`,
 	            tag: 'In Progress',
                 orderId: order.id,
                 state: order.state,
@@ -158,7 +128,7 @@ export class TasksService implements OnModuleInit{
         })
     }
 
-    private async getFilteredOrders(ctx: RequestContext, dateFilter: FindOperator<Date>, stateFilter: FindOperator<String> | string){
+    private async getFilteredOrders(ctx: RequestContext, dateFilter: FindOperator<Date>, stateFilter: FindOperator<String> | string, isDelivery?:boolean){
         return await this.conn.getRepository(ctx, Order).
         createQueryBuilder('order')
           .select('order.code')
@@ -167,13 +137,16 @@ export class TasksService implements OnModuleInit{
         .leftJoin('order.channels', 'orderChannel')
         .setFindOptions({where:{
             customFields:{
-                Delivery_Collection_Date:  dateFilter
+                Delivery_Collection_Date:  dateFilter,
+                ...(isDelivery !== undefined?
+               {Is_Delivery: isDelivery}:{})
             },
             state: stateFilter as any,
             channels:{
                 id: ctx.channelId
             }
         }})
+        .andWhere('state NOT IN (:...excludedStates)',{excludedStates: ['Draft','AddingItems','ArraningPayment','PaymentAuthorized','PaymentSettled','Shipped','Delivered', 'Cancelled'] as OrderState[]})
         .getMany()
     }
 

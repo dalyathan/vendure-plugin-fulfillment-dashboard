@@ -5,8 +5,14 @@ import { Component } from '@angular/core';
     selector: 'greeter',
     template: `
         <vdr-page-block>
-            <task-list/>
-            <delivery-route/>
+            <div class="clr-row">
+                <div class="clr-col-5">
+                    <task-list/>
+                </div>
+                <div class="clr-col">
+                    <delivery-route/>
+                </div>
+            </div>
         </vdr-page-block>
     `,
 })

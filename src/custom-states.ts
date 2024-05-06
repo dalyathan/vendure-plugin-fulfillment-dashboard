@@ -4,7 +4,7 @@ export const Fulfill: OrderProcess<'prepared'|'readyfordelivery'|'outfordelivery
   transitions: {
         prepared: { to: ['readyfordelivery', 'readyforcollection'],mergeStrategy: 'replace'},
         readyforcollection: { to: ['collected', 'notcollected'],mergeStrategy: 'replace'},
-        collected: { to: [],mergeStrategy: 'replace'},
+        collected: { to: ['Delivered'],mergeStrategy: 'replace'},
         notcollected: { to: [],mergeStrategy: 'replace'},
         readyfordelivery: { to: ['outfordelivery'],mergeStrategy: 'replace'},
         outfordelivery: { to: ['Delivered', 'reschedule'],mergeStrategy: 'replace'},

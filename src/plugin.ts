@@ -5,12 +5,12 @@ import { TasksResolver } from './api/tasks.resolver';
 import { adminApi } from './api/api';
 import { TasksService } from './api/tasks.service';
 import { tasksAndOrders } from './constants';
+import { DeliveryRoutesService } from './api/delivery-routes.service';
 
 @VendurePlugin({
     imports: [PluginCommonModule],
-    providers: [TasksService],
+    providers: [TasksService, DeliveryRoutesService],
     configuration:(config)=>{
-        config.customFields.Order.push({name: "deliveryRoute", type: 'string', internal: true},)
         config.authOptions.customPermissions.push(tasksAndOrders);
         return config;
     },
